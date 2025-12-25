@@ -155,14 +155,18 @@ make clean
 
 1. Reads all files in the messagedir
 2. Resolves each filename to a full commit hash
-3. Uses `git filter-repo`'s Python API to rewrite matching commits
-4. Optionally updates author/committer dates if `-r` is specified
+3. Saves git remotes (they are removed by `git filter-repo` by default)
+4. Uses `git filter-repo`'s Python API to rewrite matching commits
+5. Restores git remotes after rewriting
+6. Optionally updates author/committer dates if `-r` is specified
 
 ## Notes
 
 - Original refs are automatically handled by `git filter-repo`
 - The tool requires a clean working directory (no uncommitted changes)
 - Commits are rewritten, so commit hashes will change
+- **Git remotes are automatically preserved** - they are saved before and restored after rewriting
+- Old commits are fully replaced (not mixed with new ones), so `git log` will show the same number of commits
 - Use with caution on shared repositories
 
 ## License

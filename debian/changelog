@@ -1,3 +1,12 @@
+git-reword (1.0.1-1) unstable; urgency=medium
+
+  * Fix: Preserve git remotes during commit message rewriting
+  * Fix: Remove --partial flag to fully replace commits instead of mixing old and new history
+  * Fix: Ensure git log shows same commit count after rewriting (old commits fully replaced)
+  * Improvement: Automatically save and restore remotes before/after filter-repo runs
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Thu, 25 Dec 2025 11:54:42 +0000
+
 git-reword (1.0.0-1) unstable; urgency=medium
 
   * Initial release

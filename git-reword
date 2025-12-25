@@ -107,6 +107,16 @@ def reword_commits(messagedir, reset_author_date=False):
         print("Or use: pip install git-filter-repo", file=sys.stderr)
         sys.exit(1)
     
+    # Save remotes before running filter-repo (it removes them by default)
+    remotes = {}
+    stdout, returncode = run_git_command("git remote", check=False)
+    if returncode == 0 and stdout:
+        for remote in stdout.split('\n'):
+            if remote.strip():
+                url_stdout, _ = run_git_command(f"git remote get-url {remote}", check=False)
+                if url_stdout:
+                    remotes[remote] = url_stdout.strip()
+    
     print("Rewording commits using git filter-repo...")
     
     # Create callback scripts for git filter-repo
@@ -164,7 +174,10 @@ with open(state_file, 'w') as f:
     f.write(current_hash)
 return commit"""
             
-            cmd = ['git', 'filter-repo', '--force', '--message-callback', msg_code, '--commit-callback', commit_code]
+            # Use --refs to only rewrite the current branch
+            # Do NOT use --partial as it creates a mixture of old and new history
+            # We'll restore remotes manually after filter-repo runs
+            cmd = ['git', 'filter-repo', '--force', '--refs', f'refs/heads/{current_branch}', '--message-callback', msg_code, '--commit-callback', commit_code]
             
             print(f"Running: git filter-repo on {current_branch}")
             result = subprocess.run(cmd, cwd=os.getcwd())
@@ -172,6 +185,14 @@ return commit"""
             if result.returncode != 0:
                 print(f"\nFilter-repo failed.", file=sys.stderr)
                 sys.exit(1)
+            
+            # Restore remotes that were removed by filter-repo
+            if remotes:
+                print("Restoring remotes...")
+                for remote, url in remotes.items():
+                    run_git_command(f"git remote add {remote} {url}", check=False)
+                    # Also restore fetch refspec if it exists
+                    run_git_command(f"git config remote.{remote}.fetch '+refs/heads/*:refs/remotes/{remote}/*'", check=False)
             
             print("Successfully reworded commits!")
             
