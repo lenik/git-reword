@@ -156,9 +156,11 @@ make clean
 1. Reads all files in the messagedir
 2. Resolves each filename to a full commit hash
 3. Saves git remotes (they are removed by `git filter-repo` by default)
-4. Uses `git filter-repo`'s Python API to rewrite matching commits
+4. Uses `git filter-repo`'s commit callback to modify commit messages directly
 5. Restores git remotes after rewriting
 6. Optionally updates author/committer dates if `-r` is specified
+
+The tool modifies `commit.message` directly in the commit callback, ensuring reliable message replacement for matching commits.
 
 ## Notes
 
