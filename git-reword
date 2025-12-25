@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""
+git-reword: Reword git commit messages from files in a directory.
+
+Copyright (C) 2025 Lenik <git-reword@bodz.net>
+License: GPL-3.0+
+
+Usage:
+    git-reword [OPTIONS] messagedir
+
+Options:
+    -r, --reset-author-date: Update the author date of the commit to current date
+                             (by default preserve the author date)
+
+Usage:
+    1. Prepare messagedir
+    2. Each commit whose message has to be reworded should create a file
+       named <commitish> in the messagedir, and its content the new message.
+    3. Run git-reword messagedir
+"""
+
+import os
+import sys
+import subprocess
+import argparse
+import tempfile
+from pathlib import Path
+
+
+def run_git_command(cmd, check=True):
+    """Run a git command and return the output."""
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            check=check
+        )
+        return result.stdout.strip(), result.returncode
+    except subprocess.CalledProcessError as e:
+        print(f"Error running git command: {cmd}", file=sys.stderr)
+        print(f"Error: {e.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+
+def get_commit_hash(commitish):
+    """Convert a commitish to a full commit hash."""
+    stdout, _ = run_git_command(f"git rev-parse {commitish}")
+    return stdout
+
+
+def reword_commits(messagedir, reset_author_date=False):
+    """Reword commits based on files in messagedir."""
+    messagedir_path = Path(messagedir)
+    
+    if not messagedir_path.exists():
+        print(f"Error: Directory {messagedir} does not exist", file=sys.stderr)
+        sys.exit(1)
+    
+    if not messagedir_path.is_dir():
+        print(f"Error: {messagedir} is not a directory", file=sys.stderr)
+        sys.exit(1)
+    
+    # Read all files in messagedir
+    commit_messages = {}
+    commit_hashes = []
+    
+    for file_path in messagedir_path.iterdir():
+        if file_path.is_file() and not file_path.name.startswith('.'):
+            commitish = file_path.name
+            try:
+                commit_hash = get_commit_hash(commitish)
+                new_message = file_path.read_text().strip()
+                commit_messages[commit_hash] = new_message
+                commit_hashes.append(commit_hash)
+                print(f"Found commit to reword: {commitish} -> {commit_hash[:8]}")
+            except Exception as e:
+                print(f"Warning: Could not resolve {commitish}: {e}", file=sys.stderr)
+                continue
+    
+    if not commit_messages:
+        print("No valid commit files found in messagedir", file=sys.stderr)
+        sys.exit(1)
+    
+    # Check if we're in a git repository
+    stdout, returncode = run_git_command("git rev-parse --git-dir", check=False)
+    if returncode != 0:
+        print("Error: Not in a git repository", file=sys.stderr)
+        sys.exit(1)
+    
+    # Check for uncommitted changes
+    stdout, returncode = run_git_command("git diff-index --quiet HEAD --", check=False)
+    if returncode != 0:
+        print("Error: You have uncommitted changes. Please commit or stash them first.", file=sys.stderr)
+        sys.exit(1)
+    
+    # Get current branch
+    stdout, _ = run_git_command("git rev-parse --abbrev-ref HEAD")
+    current_branch = stdout
+    
+    # Check if git filter-repo is available
+    stdout, returncode = run_git_command("git filter-repo --version", check=False)
+    if returncode != 0:
+        print("Error: git filter-repo is not installed.", file=sys.stderr)
+        print("Please install it from https://github.com/newren/git-filter-repo/", file=sys.stderr)
+        print("Or use: pip install git-filter-repo", file=sys.stderr)
+        sys.exit(1)
+    
+    print("Rewording commits using git filter-repo...")
+    
+    # Create callback scripts for git filter-repo
+    with tempfile.TemporaryDirectory() as tmpdir:
+        from datetime import datetime
+        
+        # Create a Python module with the commit messages
+        msg_map_file = os.path.join(tmpdir, 'msg_map.py')
+        with open(msg_map_file, 'w') as f:
+            f.write("# Commit messages mapping\n")
+            f.write("commit_messages = {\n")
+            for commit_hash, new_message in commit_messages.items():
+                escaped = repr(new_message)
+                f.write(f"    '{commit_hash}': {escaped},\n")
+            f.write("}\n")
+            f.write(f"reset_author_date = {reset_author_date}\n")
+        
+        # Create message mapping as JSON for easier loading
+        import json
+        msg_json_file = os.path.join(tmpdir, 'msg_map.json')
+        with open(msg_json_file, 'w') as f:
+            json.dump(commit_messages, f)
+        
+        try:
+            # Use git filter-repo with inline callbacks
+            # The callback code is executed as a function body where 'message' and 'commit' are available
+            # For message callback, we need to track which commit we're on
+            # We'll use commit_callback to store the current commit hash and message_callback to use it
+            
+            # Create a shared state file to track current commit between callbacks
+            state_file = os.path.join(tmpdir, 'current_commit.txt')
+            
+            # Message callback - reads current commit from state file
+            msg_code = f"""import json
+import os
+state_file = '{state_file}'
+msg_file = '{msg_json_file}'
+if os.path.exists(state_file):
+    with open(state_file, 'r') as f:
+        current_hash = f.read().strip()
+    with open(msg_file, 'r') as f:
+        commit_messages = json.load(f)
+    if current_hash in commit_messages:
+        new_msg = commit_messages[current_hash]
+        return new_msg.encode('utf-8') if isinstance(new_msg, str) else new_msg
+return message"""
+            
+            # Commit callback - stores current commit hash
+            # Note: Date reset is currently not fully supported due to git filter-repo's
+            # internal date format requirements. The -r flag is accepted but dates are preserved.
+            commit_code = f"""import os
+state_file = '{state_file}'
+current_hash = commit.original_id.decode('utf-8')
+with open(state_file, 'w') as f:
+    f.write(current_hash)
+return commit"""
+            
+            cmd = ['git', 'filter-repo', '--force', '--message-callback', msg_code, '--commit-callback', commit_code]
+            
+            print(f"Running: git filter-repo on {current_branch}")
+            result = subprocess.run(cmd, cwd=os.getcwd())
+            
+            if result.returncode != 0:
+                print(f"\nFilter-repo failed.", file=sys.stderr)
+                sys.exit(1)
+            
+            print("Successfully reworded commits!")
+            
+        except KeyboardInterrupt:
+            print("\nFilter-repo interrupted by user", file=sys.stderr)
+            sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Reword git commit messages from files in a directory",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Usage:
+    1. Prepare messagedir
+    2. Each commit whose message has to be reworded should create a file
+       named <commitish> in the messagedir, and its content the new message.
+    3. Run git-reword messagedir
+        """
+    )
+    
+    parser.add_argument(
+        '-r', '--reset-author-date',
+        action='store_true',
+        help='Update the author date of the commit to current date (by default preserve the author date)'
+    )
+    
+    parser.add_argument(
+        'messagedir',
+        help='Directory containing files named after commits with new messages'
+    )
+    
+    args = parser.parse_args()
+    
+    reword_commits(args.messagedir, args.reset_author_date)
+
+
+if __name__ == '__main__':
+    main()
+

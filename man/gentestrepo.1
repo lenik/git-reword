@@ -1,0 +1,43 @@
+.TH GENTESTREPO 1 "2025-01-01" "git-reword" "User Commands"
+.SH NAME
+gentestrepo \- generate a test git repository with random commits
+.SH SYNOPSIS
+.B gentestrepo
+\fB\-n\fR \fINUM\fR \fIREPO_PATH\fR [\fB\-s\fR \fISEED\fR]
+.SH DESCRIPTION
+\fBgentestrepo\fR creates a git repository at the specified path with a specified number of random commits. Each commit performs a random operation (modify, add, or delete files). Useful for testing git tools and scripts.
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-num\-commits\fR \fINUM\fR
+Number of commits to generate (required).
+.TP
+\fB\-s\fR, \fB\-\-seed\fR \fISEED\fR
+Random seed for reproducibility (optional). Using the same seed will generate the same sequence of commits.
+.TP
+\fIREPO_PATH\fR
+Path where the git repository will be created (required). The directory will be created or recreated if it already exists.
+.SH EXAMPLES
+Generate a test repository with 10 commits:
+.RS
+.nf
+gentestrepo -n 10 /tmp/test-repo
+.fi
+.RE
+.PP
+Generate a reproducible test repository:
+.RS
+.nf
+gentestrepo -n 5 /tmp/repo -s 42
+.fi
+.RE
+.SH OUTPUT
+The script outputs the repository path as \fBREPO_DIR=\fR\fIpath\fR on stdout, which can be used by other scripts.
+.SH AUTHOR
+Lenik <git-reword@bodz.net>
+.SH COPYRIGHT
+Copyright (C) 2025 Lenik
+License: GPL-3.0+
+.SH SEE ALSO
+.BR git-reword (1),
+.BR genrewords (1)
+

@@ -1,0 +1,29 @@
+# bash completion for git-reword
+# To install: source this file or copy to /etc/bash_completion.d/
+
+_git_reword() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    opts="-r --reset-author-date -h --help"
+    
+    case "${prev}" in
+        -r|--reset-author-date|-h|--help)
+            # These flags don't take arguments, complete directories
+            COMPREPLY=( $(compgen -d -- "${cur}") )
+            return 0
+            ;;
+        *)
+            if [[ ${cur} == -* ]]; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            else
+                COMPREPLY=( $(compgen -d -- "${cur}") )
+            fi
+            ;;
+    esac
+}
+
+complete -F _git_reword git-reword
+

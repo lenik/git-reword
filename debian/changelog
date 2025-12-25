@@ -1,0 +1,9 @@
+git-reword (1.0.0-1) unstable; urgency=medium
+
+  * Initial release
+  * Add git-reword utility for rewording commit messages
+  * Add gentestrepo for generating test repositories
+  * Add genrewords for generating reword message directories
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Wed, 01 Jan 2025 12:00:00 +0000
+

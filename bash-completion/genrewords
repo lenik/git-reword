@@ -1,0 +1,42 @@
+# bash completion for genrewords
+# To install: source this file or copy to /etc/bash_completion.d/
+
+_genrewords() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    opts="-n --num-files -s --seed -h --help"
+    
+    case "${prev}" in
+        -n|--num-files)
+            # Number expected
+            return 0
+            ;;
+        -s|--seed)
+            # Seed expected
+            return 0
+            ;;
+        -h|--help)
+            return 0
+            ;;
+        *)
+            if [[ ${cur} == -* ]]; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            elif [[ ${prev} == -n ]] || [[ ${prev} == --num-files ]]; then
+                # After -n, expect a number
+                return 0
+            elif [[ ${prev} == -s ]] || [[ ${prev} == --seed ]]; then
+                # After -s, expect a number
+                return 0
+            else
+                # Complete directories for messagedir
+                COMPREPLY=( $(compgen -d -- "${cur}") )
+            fi
+            ;;
+    esac
+}
+
+complete -F _genrewords genrewords
+

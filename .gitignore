@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Test artifacts
+/tmp/test-repo-*
+/tmp/tmp.*
+messagedir*/
+refs/original/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debian build
+debian/files
+debian/.debhelper/
+debian/git-reword/
+

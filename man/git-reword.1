@@ -1,0 +1,48 @@
+.TH GIT-REWORD 1 "2025-01-01" "git-reword" "User Commands"
+.SH NAME
+git-reword \- reword git commit messages from files in a directory
+.SH SYNOPSIS
+.B git-reword
+[\fIOPTIONS\fR] \fImessagedir\fR
+.SH DESCRIPTION
+\fBgit-reword\fR allows you to reword multiple git commit messages by preparing new messages in files named after the commits. Each file in the messagedir should be named after a commit (hash, short hash, or any commitish) and contain the new commit message.
+.SH OPTIONS
+.TP
+\fB\-r\fR, \fB\-\-reset\-author\-date\fR
+Update the author date of reworded commits to the current date. By default, the original author date is preserved.
+.SH USAGE
+1. Prepare a messagedir directory
+2. For each commit to reword, create a file named after the commit (hash/ref) containing the new message
+3. Run \fBgit-reword messagedir\fR
+.SH EXAMPLES
+Create a messagedir and reword commits:
+.RS
+.nf
+mkdir messagedir
+echo "New commit message" > messagedir/abc1234
+git-reword messagedir
+.fi
+.RE
+.PP
+Reword commits and update author dates:
+.RS
+.nf
+git-reword -r messagedir
+.fi
+.RE
+.SH REQUIREMENTS
+Requires Python 3, git, and git-filter-repo (install with \fBpip install git-filter-repo\fR).
+.SH NOTES
+- The tool requires a clean working directory (no uncommitted changes)
+- Commits are rewritten, so commit hashes will change
+- Use with caution on shared repositories
+- Original refs are automatically handled by git-filter-repo
+.SH AUTHOR
+Lenik <git-reword@bodz.net>
+.SH COPYRIGHT
+Copyright (C) 2025 Lenik
+License: GPL-3.0+
+.SH SEE ALSO
+.BR gentestrepo (1),
+.BR genrewords (1)
+

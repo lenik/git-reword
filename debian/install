@@ -1,0 +1,10 @@
+git-reword usr/bin/
+gentestrepo usr/bin/
+genrewords usr/bin/
+man/git-reword.1 usr/share/man/man1/
+man/gentestrepo.1 usr/share/man/man1/
+man/genrewords.1 usr/share/man/man1/
+bash-completion/git-reword etc/bash_completion.d/
+bash-completion/gentestrepo etc/bash_completion.d/
+bash-completion/genrewords etc/bash_completion.d/
+

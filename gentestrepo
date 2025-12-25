@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""
+gentestrepo: Generate a test git repository with random commits.
+
+Copyright (C) 2025 Lenik <git-reword@bodz.net>
+License: GPL-3.0+
+
+Usage:
+    gentestrepo -n NUM REPO_PATH [-s SEED]
+
+Options:
+    -n, --num-commits NUM: Number of commits to generate
+    -s, --seed SEED: Random seed for reproducibility
+    REPO_PATH: Path where the git repository will be created
+"""
+
+import os
+import sys
+import subprocess
+import argparse
+import random
+import shutil
+from pathlib import Path
+
+
+def run_command(cmd, cwd=None, check=True, env=None):
+    """Run a shell command."""
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            cwd=cwd,
+            env=env if env is not None else os.environ.copy(),
+            capture_output=True,
+            text=True,
+            check=check
+        )
+        return result.stdout.strip(), result.returncode
+    except subprocess.CalledProcessError as e:
+        print(f"Error running command: {cmd}", file=sys.stderr)
+        print(f"Error: {e.stderr}", file=sys.stderr)
+        if check:
+            sys.exit(1)
+        return e.stdout.strip(), e.returncode
+
+
+def generate_repo(repo_path, num_commits, seed=None):
+    """Generate a test git repository with random commits."""
+    if seed is not None:
+        random.seed(seed)
+    
+    repo_dir = Path(repo_path).resolve()
+    
+    # Remove existing directory if it exists
+    if repo_dir.exists():
+        print(f"Removing existing directory: {repo_dir}")
+        shutil.rmtree(repo_dir)
+    
+    # Create the directory
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    repo_dir_str = str(repo_dir)
+    
+    print(f"Creating test repository in: {repo_dir_str}")
+    
+    try:
+        # Initialize git repo
+        run_command("git init", cwd=repo_dir_str)
+        run_command("git config user.name 'Test User'", cwd=repo_dir_str)
+        run_command("git config user.email 'test@example.com'", cwd=repo_dir_str)
+        
+        # Create initial file
+        initial_file = os.path.join(repo_dir_str, "file1.txt")
+        with open(initial_file, 'w') as f:
+            f.write("Initial content\n")
+        run_command("git add file1.txt", cwd=repo_dir_str)
+        run_command("git commit -m 'Initial commit'", cwd=repo_dir_str)
+        
+        # Generate random commits
+        files = ["file1.txt"]
+        operations = ["modify", "add", "delete"]
+        
+        for i in range(num_commits):
+            # Choose a random operation
+            op = random.choice(operations)
+            
+            if op == "modify" and files:
+                # Modify an existing file
+                file_to_modify = random.choice(files)
+                file_path = os.path.join(repo_dir_str, file_to_modify)
+                with open(file_path, 'a') as f:
+                    f.write(f"Change {i+1} at commit {i+1}\n")
+                run_command(f"git add {file_to_modify}", cwd=repo_dir_str)
+                commit_msg = f"Modify {file_to_modify} - commit {i+1}"
+                
+            elif op == "add":
+                # Add a new file
+                new_file = f"file{len(files)+1}.txt"
+                files.append(new_file)
+                file_path = os.path.join(repo_dir_str, new_file)
+                with open(file_path, 'w') as f:
+                    f.write(f"New file created at commit {i+1}\n")
+                run_command(f"git add {new_file}", cwd=repo_dir_str)
+                commit_msg = f"Add {new_file} - commit {i+1}"
+                
+            elif op == "delete" and len(files) > 1:
+                # Delete a file (but keep at least one)
+                file_to_delete = random.choice(files[:-1])  # Don't delete the last file
+                files.remove(file_to_delete)
+                file_path = os.path.join(repo_dir_str, file_to_delete)
+                run_command(f"git rm {file_to_delete}", cwd=repo_dir_str)
+                commit_msg = f"Delete {file_to_delete} - commit {i+1}"
+            else:
+                # Fallback to modify
+                file_to_modify = random.choice(files)
+                file_path = os.path.join(repo_dir_str, file_to_modify)
+                with open(file_path, 'a') as f:
+                    f.write(f"Change {i+1} at commit {i+1}\n")
+                run_command(f"git add {file_to_modify}", cwd=repo_dir_str)
+                commit_msg = f"Modify {file_to_modify} - commit {i+1}"
+            
+            # Create commit with a timestamp to ensure different hashes
+            env = os.environ.copy()
+            timestamp = f"{1000000000 + i * 60}"  # Increment by 60 seconds each commit
+            env['GIT_AUTHOR_DATE'] = timestamp
+            env['GIT_COMMITTER_DATE'] = timestamp
+            
+            run_command(
+                f"git commit -m '{commit_msg}'",
+                cwd=repo_dir_str,
+                env=env
+            )
+        
+        # Get all commit hashes
+        stdout, _ = run_command("git log --format=%H", cwd=repo_dir_str)
+        commits = stdout.split('\n') if stdout else []
+        
+        print(f"Generated {len(commits)} commits")
+        print(f"Repository location: {repo_dir_str}")
+        print(f"\nCommit hashes:")
+        for i, commit in enumerate(commits[:10]):  # Show first 10
+            stdout, _ = run_command(f"git log -1 --format='%h %s' {commit}", cwd=repo_dir_str)
+            print(f"  {stdout}")
+        if len(commits) > 10:
+            print(f"  ... and {len(commits) - 10} more")
+        
+        return repo_dir_str, commits
+        
+    except Exception as e:
+        print(f"Error generating repository: {e}", file=sys.stderr)
+        # Clean up on error
+        if repo_dir.exists():
+            shutil.rmtree(repo_dir, ignore_errors=True)
+        sys.exit(1)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate a test git repository with random commits",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        '-n', '--num-commits',
+        type=int,
+        required=True,
+        help='Number of commits to generate'
+    )
+    
+    parser.add_argument(
+        '-s', '--seed',
+        type=int,
+        default=None,
+        help='Random seed for reproducibility'
+    )
+    
+    parser.add_argument(
+        'repo_path',
+        help='Path where the git repository will be created'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.num_commits < 1:
+        print("Error: Number of commits must be at least 1", file=sys.stderr)
+        sys.exit(1)
+    
+    repo_dir, commits = generate_repo(args.repo_path, args.num_commits, args.seed)
+    
+    # Print the repo directory so it can be used by other scripts
+    # Output to stderr for user info, stdout for script consumption
+    print(f"\nREPO_DIR={repo_dir}", file=sys.stderr)
+    print(f"REPO_DIR={repo_dir}", file=sys.stdout)
+
+
+if __name__ == '__main__':
+    main()
+

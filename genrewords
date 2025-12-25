@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""
+genrewords: Generate a messagedir with reword message files.
+
+Copyright (C) 2025 Lenik <git-reword@bodz.net>
+License: GPL-3.0+
+
+Usage:
+    genrewords -n NUM [-s SEED] [messagedir]
+
+Options:
+    -n, --num-files NUM: Number of reword message files to generate
+    -s, --seed SEED: Random seed for reproducibility
+    messagedir: Directory to create (default: messagedir)
+"""
+
+import os
+import sys
+import subprocess
+import argparse
+import random
+from pathlib import Path
+
+
+def run_command(cmd, cwd=None, check=True):
+    """Run a shell command."""
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=check
+        )
+        return result.stdout.strip(), result.returncode
+    except subprocess.CalledProcessError as e:
+        print(f"Error running command: {cmd}", file=sys.stderr)
+        print(f"Error: {e.stderr}", file=sys.stderr)
+        if check:
+            sys.exit(1)
+        return e.stdout.strip(), e.returncode
+
+
+def get_commit_hashes(cwd=None, num=None):
+    """Get commit hashes from the current git repository."""
+    cmd = "git log --format=%H"
+    if num:
+        cmd += f" -n {num}"
+    stdout, _ = run_command(cmd, cwd=cwd)
+    return stdout.split('\n') if stdout else []
+
+
+def generate_messagedir(num_files, seed=None, messagedir="messagedir", repo_dir=None):
+    """Generate a messagedir with reword message files."""
+    if seed is not None:
+        random.seed(seed)
+    
+    # Check if we're in a git repo or use provided repo_dir
+    if repo_dir:
+        cwd = repo_dir
+        # Check if it's a valid git repo
+        stdout, returncode = run_command("git rev-parse --git-dir", cwd=cwd, check=False)
+        if returncode != 0:
+            print(f"Error: {repo_dir} is not a git repository", file=sys.stderr)
+            sys.exit(1)
+    else:
+        cwd = None
+        stdout, returncode = run_command("git rev-parse --git-dir", check=False)
+        if returncode != 0:
+            print("Error: Not in a git repository and no repo_dir provided", file=sys.stderr)
+            sys.exit(1)
+    
+    # Get available commits
+    all_commits = get_commit_hashes(cwd=cwd)
+    if not all_commits:
+        print("Error: No commits found in repository", file=sys.stderr)
+        sys.exit(1)
+    
+    if num_files > len(all_commits):
+        print(f"Warning: Requested {num_files} files but only {len(all_commits)} commits available", file=sys.stderr)
+        num_files = len(all_commits)
+    
+    # Create messagedir
+    messagedir_path = Path(messagedir)
+    messagedir_path.mkdir(exist_ok=True)
+    
+    # Select random commits
+    selected_commits = random.sample(all_commits, min(num_files, len(all_commits)))
+    
+    # Generate reword messages
+    messages = [
+        "Reworded commit message",
+        "Updated commit message for clarity",
+        "Improved commit message",
+        "Fixed typo in commit message",
+        "Clarified commit message",
+        "Enhanced commit description",
+        "Refined commit message",
+        "Better commit message",
+    ]
+    
+    created_files = []
+    for i, commit_hash in enumerate(selected_commits):
+        # Use short hash as filename
+        short_hash = commit_hash[:8]
+        file_path = messagedir_path / short_hash
+        
+        # Generate a random message or use a pattern
+        if i < len(messages):
+            message = messages[i]
+        else:
+            message = f"Reworded message {i+1}"
+        
+        # Add some variation
+        if random.random() > 0.5:
+            message += f"\n\nAdditional details for commit {short_hash}"
+        
+        with open(file_path, 'w') as f:
+            f.write(message)
+        
+        created_files.append((short_hash, commit_hash, file_path))
+        print(f"Created: {file_path} -> {commit_hash[:8]}")
+    
+    print(f"\nGenerated {len(created_files)} reword message files in {messagedir}")
+    return messagedir_path, created_files
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate a messagedir with reword message files",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    parser.add_argument(
+        '-n', '--num-files',
+        type=int,
+        required=True,
+        help='Number of reword message files to generate'
+    )
+    
+    parser.add_argument(
+        '-s', '--seed',
+        type=int,
+        default=None,
+        help='Random seed for reproducibility'
+    )
+    
+    parser.add_argument(
+        'messagedir',
+        nargs='?',
+        default='messagedir',
+        help='Directory to create (default: messagedir)'
+    )
+    
+    args = parser.parse_args()
+    
+    if args.num_files < 1:
+        print("Error: Number of files must be at least 1", file=sys.stderr)
+        sys.exit(1)
+    
+    # Check for REPO_DIR environment variable (set by gentestrepo)
+    repo_dir = os.environ.get('REPO_DIR')
+    
+    generate_messagedir(args.num_files, args.seed, args.messagedir, repo_dir)
+
+
+if __name__ == '__main__':
+    main()
+

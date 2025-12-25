@@ -1,0 +1,53 @@
+.TH GENREWORDS 1 "2025-01-01" "git-reword" "User Commands"
+.SH NAME
+genrewords \- generate a messagedir with reword message files
+.SH SYNOPSIS
+.B genrewords
+\fB\-n\fR \fINUM\fR [\fB\-s\fR \fISEED\fR] [\fImessagedir\fR]
+.SH DESCRIPTION
+\fBgenrewords\fR generates a messagedir directory containing reword message files for existing commits in the current git repository. Each file is named after a commit hash and contains a sample reword message. Useful for preparing test data for \fBgit-reword\fR.
+.SH OPTIONS
+.TP
+\fB\-n\fR, \fB\-\-num\-files\fR \fINUM\fR
+Number of reword message files to generate (required).
+.TP
+\fB\-s\fR, \fB\-\-seed\fR \fISEED\fR
+Random seed for reproducibility (optional). Using the same seed will select the same commits.
+.TP
+\fImessagedir\fR
+Directory to create (default: \fBmessagedir\fR). If the directory exists, files will be added to it.
+.SH EXAMPLES
+Generate 5 reword message files:
+.RS
+.nf
+genrewords -n 5
+.fi
+.RE
+.PP
+Generate files in a specific directory with a seed:
+.RS
+.nf
+genrewords -n 3 -s 123 my-messages
+.fi
+.RE
+.PP
+Generate files for a repository specified by REPO_DIR environment variable:
+.RS
+.nf
+export REPO_DIR=/path/to/repo
+genrewords -n 5
+.fi
+.RE
+.SH ENVIRONMENT
+.TP
+\fBREPO_DIR\fR
+If set, use this directory as the git repository instead of the current directory.
+.SH AUTHOR
+Lenik <git-reword@bodz.net>
+.SH COPYRIGHT
+Copyright (C) 2025 Lenik
+License: GPL-3.0+
+.SH SEE ALSO
+.BR git-reword (1),
+.BR gentestrepo (1)
+

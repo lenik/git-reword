@@ -1,0 +1,29 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_install:
+	# Install scripts to /usr/bin
+	install -d $(CURDIR)/debian/git-reword/usr/bin
+	install -m 755 $(CURDIR)/git-reword $(CURDIR)/debian/git-reword/usr/bin/
+	install -m 755 $(CURDIR)/gentestrepo $(CURDIR)/debian/git-reword/usr/bin/
+	install -m 755 $(CURDIR)/genrewords $(CURDIR)/debian/git-reword/usr/bin/
+	# Install man pages
+	install -d $(CURDIR)/debian/git-reword/usr/share/man/man1
+	install -m 644 $(CURDIR)/man/git-reword.1 $(CURDIR)/debian/git-reword/usr/share/man/man1/
+	install -m 644 $(CURDIR)/man/gentestrepo.1 $(CURDIR)/debian/git-reword/usr/share/man/man1/
+	install -m 644 $(CURDIR)/man/genrewords.1 $(CURDIR)/debian/git-reword/usr/share/man/man1/
+	# Install bash completions
+	install -d $(CURDIR)/debian/git-reword/etc/bash_completion.d
+	install -m 644 $(CURDIR)/bash-completion/git-reword $(CURDIR)/debian/git-reword/etc/bash_completion.d/
+	install -m 644 $(CURDIR)/bash-completion/gentestrepo $(CURDIR)/debian/git-reword/etc/bash_completion.d/
+	install -m 644 $(CURDIR)/bash-completion/genrewords $(CURDIR)/debian/git-reword/etc/bash_completion.d/
+
+override_dh_auto_build:
+	# No build step needed for Python scripts
+
+override_dh_auto_test:
+	# Run tests if needed
+	# cd test && make test
+

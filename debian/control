@@ -1,0 +1,21 @@
+Source: git-reword
+Section: devel
+Priority: optional
+Maintainer: Lenik <git-reword@bodz.net>
+Build-Depends: debhelper-compat (= 13), python3
+Standards-Version: 4.6.0
+Homepage: https://github.com/lenik/git-reword
+
+Package: git-reword
+Architecture: all
+Depends: ${python3:Depends}, ${misc:Depends}, git, python3-git-filter-repo
+Description: Reword git commit messages from files in a directory
+ git-reword allows you to reword multiple git commit messages by preparing
+ new messages in files named after the commits. This is useful for batch
+ rewriting commit messages in a repository.
+ .
+ The package includes:
+  - git-reword: Main utility to reword commit messages
+  - gentestrepo: Generate test git repositories
+  - genrewords: Generate messagedir with reword files
+
