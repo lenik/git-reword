@@ -146,38 +146,24 @@ def reword_commits(messagedir, reset_author_date=False):
             # For message callback, we need to track which commit we're on
             # We'll use commit_callback to store the current commit hash and message_callback to use it
             
-            # Create a shared state file to track current commit between callbacks
-            state_file = os.path.join(tmpdir, 'current_commit.txt')
-            
-            # Message callback - reads current commit from state file
-            msg_code = f"""import json
+            # Commit callback - modify commit message directly
+            # We modify the commit.message in commit_callback since message_callback
+            # doesn't have access to the commit object and runs before commit_callback
+            commit_code = f"""import json
 import os
-state_file = '{state_file}'
 msg_file = '{msg_json_file}'
-if os.path.exists(state_file):
-    with open(state_file, 'r') as f:
-        current_hash = f.read().strip()
-    with open(msg_file, 'r') as f:
-        commit_messages = json.load(f)
-    if current_hash in commit_messages:
-        new_msg = commit_messages[current_hash]
-        return new_msg.encode('utf-8') if isinstance(new_msg, str) else new_msg
-return message"""
-            
-            # Commit callback - stores current commit hash
-            # Note: Date reset is currently not fully supported due to git filter-repo's
-            # internal date format requirements. The -r flag is accepted but dates are preserved.
-            commit_code = f"""import os
-state_file = '{state_file}'
 current_hash = commit.original_id.decode('utf-8')
-with open(state_file, 'w') as f:
-    f.write(current_hash)
+with open(msg_file, 'r') as f:
+    commit_messages = json.load(f)
+if current_hash in commit_messages:
+    new_msg = commit_messages[current_hash]
+    commit.message = new_msg.encode('utf-8') if isinstance(new_msg, str) else new_msg
 return commit"""
             
             # Use --refs to only rewrite the current branch
             # Do NOT use --partial as it creates a mixture of old and new history
             # We'll restore remotes manually after filter-repo runs
-            cmd = ['git', 'filter-repo', '--force', '--refs', f'refs/heads/{current_branch}', '--message-callback', msg_code, '--commit-callback', commit_code]
+            cmd = ['git', 'filter-repo', '--force', '--refs', f'refs/heads/{current_branch}', '--commit-callback', commit_code]
             
             print(f"Running: git filter-repo on {current_branch}")
             result = subprocess.run(cmd, cwd=os.getcwd())
