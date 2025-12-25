@@ -1,3 +1,12 @@
+git-reword (1.0.2-1) unstable; urgency=medium
+
+  * Fix: Commit message rewriting now works correctly by modifying commit.message
+    directly in commit callback instead of using message callback with state file
+  * Fix: Resolved issue where commit messages were not being replaced due to
+    callback execution order (message callback runs before commit callback sets state)
+
+ -- Lenik <git-reword@bodz.net>  Wed, 25 Dec 2024 20:00:00 +0000
+
 git-reword (1.0.1-1) unstable; urgency=medium
 
   * Fix: Preserve git remotes during commit message rewriting
