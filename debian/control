@@ -8,7 +8,7 @@ Homepage: https://github.com/lenik/git-reword
 
 Package: git-reword
 Architecture: all
-Depends: ${python3:Depends}, ${misc:Depends}, git, python3-git-filter-repo
+Depends: ${python3:Depends}, ${misc:Depends}, git
 Description: Reword git commit messages from files in a directory
  git-reword allows you to reword multiple git commit messages by preparing
  new messages in files named after the commits. This is useful for batch
