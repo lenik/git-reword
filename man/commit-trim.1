@@ -1,0 +1,103 @@
+.TH COMMIT-TRIM 1 "March 2026" "commit-trim 1.0.0" "User Commands"
+
+.SH NAME
+commit-trim \- Remove git commit headers and unindent content
+
+.SH SYNOPSIS
+.B commit-trim
+[\fIoptions\fR] \fIfiles\fR...
+
+.SH DESCRIPTION
+\fBcommit-trim\fR is a command-line tool to process git commit message files by removing the git header (commit hash, author, date) and unindenting the commit message content while preserving the relative indentation structure.
+
+The tool removes the first 4 lines of a git commit message file (commit hash, author, date, and blank line) and then removes the common whitespace prefix from all non-empty lines, preserving the relative indentation structure.
+
+.SH OPTIONS
+.TP
+\fB\-i\fR, \fB\-\-inplace\fR
+Edit files in place. By default, output is written to stdout.
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Show help message and exit.
+
+.SH EXAMPLES
+Process a single commit file and output to stdout:
+.RS
+.EX
+commit-trim commits/1c2eb81
+.EE
+.RE
+
+.PP
+Edit a commit file in place:
+.RS
+.EX
+commit-trim -i commits/1c2eb81
+.EE
+.RE
+
+.PP
+Process multiple files:
+.RS
+.EX
+commit-trim commits/*.txt
+.EE
+.RE
+
+.SH INPUT FORMAT
+A typical git commit message file has the following format:
+.RS
+.EX
+commit <hash>
+Author: <name> <email>
+Date: <date>
+
+    <commit message>
+    <indented content>
+.EE
+.RE
+
+.SH OUTPUT FORMAT
+The output contains only the commit message with the common indentation removed:
+.RS
+.EX
+<commit message>
+<unindented content>
+.EE
+.RE
+
+.SH EXIT STATUS
+.TP
+0
+Success
+
+.TP
+1
+Error occurred (file not found, permission denied, etc.)
+
+.SH FILES
+.TP
+.I /usr/bin/commit-trim
+The main executable
+
+.TP
+.I /usr/share/man/man1/commit-trim.1
+This manual page
+
+.TP
+.I /usr/share/bash-completion/completions/commit-trim
+Bash completion script
+
+.SH AUTHOR
+Lenik <commit-trim@bodz.net>
+
+.SH COPYRIGHT
+Copyright \(co 2026 Lenik
+
+.SH LICENSE
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+.SH SEE ALSO
+.BR git (1),
+.BR git-log (1)

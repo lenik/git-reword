@@ -1,3 +1,9 @@
+git-reword (1.0.3) testing; urgency=medium
+
+  * Add commit-trim.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Wed, 04 Mar 2026 14:57:09 +0800
+
 git-reword (1.0.2-1) unstable; urgency=medium
 
   * Fix: Commit message rewriting now works correctly by modifying commit.message

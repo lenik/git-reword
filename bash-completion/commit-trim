@@ -1,0 +1,36 @@
+# bash completion for commit-trim
+
+_commit-trim() {
+    local cur prev words cword
+    _init_completion || return
+
+    case $prev in
+        -i|--inplace)
+            # Complete files for inplace option
+            _filedir
+            return
+            ;;
+        -h|--help)
+            # No completion needed after help
+            return
+            ;;
+        *)
+            ;;
+    esac
+
+    # If we're at the position of files, complete file names
+    if [[ $cword -gt 1 ]]; then
+        _filedir
+        return
+    fi
+
+    # Complete options
+    if [[ $cur == -* ]]; then
+        COMPREPLY=($(compgen -W '-i --inplace -h --help' -- "$cur"))
+        return
+    fi
+
+    # Default to file completion
+    _filedir
+} &&
+complete -F _commit-trim commit-trim

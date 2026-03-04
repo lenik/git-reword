@@ -18,9 +18,23 @@ DEBUG_MAN_DIR := /usr/share/man/man1
 DEBUG_BASH_COMP_DIR := /etc/bash_completion.d
 
 # Scripts to install
-SCRIPTS := git-reword gentestrepo genrewords
-MAN_PAGES := man/git-reword.1 man/gentestrepo.1 man/genrewords.1
-BASH_COMPLETIONS := bash-completion/git-reword bash-completion/gentestrepo bash-completion/genrewords
+SCRIPTS := \
+	git-reword \
+	gentestrepo \
+	genrewords \
+	commit-trim
+
+MAN_PAGES := \
+	man/git-reword.1 \
+	man/gentestrepo.1 \
+	man/genrewords.1 \
+	man/commit-trim.1
+
+BASH_COMPLETIONS := \
+	bash-completion/git-reword \
+	bash-completion/gentestrepo \
+	bash-completion/genrewords \
+	bash-completion/commit-trim
 
 # Default target
 all:
@@ -174,7 +188,6 @@ uninstall-debug:
 clean:
 	@echo "Cleaning up temporary files..."
 	@rm -rf /tmp/test-repo-* /tmp/tmp.* messagedir* refs/original/
-	@find . -name ".git" -type d -not -path "./.git/*" -exec rm -rf {} + 2>/dev/null || true
 	@echo "Cleanup complete"
 
 # Help target
